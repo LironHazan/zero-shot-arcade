@@ -15,6 +15,7 @@ Strict zero-shot. The only thing I'm allowed to do is save the code to a file.
 ## What's inside
 
 ```
+prompts/                  the prompts, exactly as they were sent
 runs/<thing>/<model>/     the artifact, exactly as it came out
 index.html                the arcade page — click and play
 ```
