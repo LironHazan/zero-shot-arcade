@@ -12,6 +12,20 @@ Not a benchmark. Nothing here is rigorous.
 
 Strict zero-shot. The only thing I'm allowed to do is save the code to a file.
 
+## How the prompts get made
+
+The zero-shot rule covers the *run*, not the thinking that goes into the prompt. With no
+retries, the prompt is the only lever there is — so it's worth sharpening before it's sent.
+
+From the chord coach onward, the prompts here are built with [Matt Pocock's
+`grilling` skill](https://github.com/mattpocock/skills). It interviews you relentlessly
+about the idea, mapping it as a design tree: every decision branches into the decisions
+hanging off it, asked in rounds, nothing silently assumed. You answer until the tree is
+exhausted, and the prompt falls out of what's left.
+
+
+The prompt as sent lives in `prompts/`. The grilling happens before it, and isn't part of the run.
+
 ## What's inside
 
 ```
