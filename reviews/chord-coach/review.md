@@ -1,7 +1,8 @@
 # Chord Coach — review
 
 Prompt: [`prompts/chord-coach-prompt.md`](../../prompts/chord-coach-prompt.md)
-Runs: `runs/claude/opus-5/chord-coach.html`, `runs/workbuddy-ai/hy4/chord-coach.html`, gpt-6-astra (pending)
+Runs: `runs/claude/opus-5/chord-coach.html`, `runs/workbuddy-ai/hy4/chord-coach.html`,
+`runs/workbuddy-ai/gpt-6-astra/chord-coach.html`
 
 The same prompt, sent once to each model. Nothing below was fixed afterwards — the
 one rule allows saving the file and nothing else.
@@ -75,4 +76,4 @@ Verified in-browser before landing:
 
 ---
 
-See [`harnesses.md`](harnesses.md) for how the two agents spent their twelve minutes.
+See [`harnesses.md`](harnesses.md) for how the three agents spent their time.
