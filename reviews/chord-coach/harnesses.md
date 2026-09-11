@@ -1,80 +1,88 @@
-# Chord Coach — how the harnesses spent their twelve minutes
+# Chord Coach — how three harnesses spent their time
 
-Same prompt, two agents, two harnesses. Both took about twelve minutes and both
-delivered a working single-file toy. What differs is where the time went, and
-that difference shows up in the artifacts.
+One prompt, three agents. All numbers below are counted from each harness's own
+session transcript, not from what the agents said about themselves. Where a figure
+is a self-report, it says so.
 
-## Measured: Claude Code / Opus 5
+| | Claude Code / Opus 5 | WorkBuddy / hy4 | WorkBuddy / astra |
+|---|---|---|---|
+| Session | `81b8d17e` | `e6729715` | `46659002` |
+| Expert summoned | none | none | **FrontendDeveloper** |
+| Prompt → delivery | **12.4 min** | **26.1 min** | **61.3 min** |
+| First tool call | +7.6 min | +12.5 min | +0.7 min |
+| HTML first written | +7.6 min | +15.2 min | +22.9 min |
+| Tool calls | 28 (24 in build) | 61 | 75 |
+| Model(s) on the calls | claude-opus-5 | hy4-preview 30 · **minimax-m3 31** | gpt-6-astra 75 |
+| Self-fixes before delivery | 7 replacements in 3 Bash patches | 10 Edits | 11 Edits |
+| Separate test scripts written | 0 | 5 (Playwright) | 3 (`.cjs` harnesses) |
+| Context used | — | 152,087 / 200,000 | 89,831 / 400,000 |
+| Credits (`credit_json`) | — | 66.16 | **862.24** |
+| Permission mode | auto | bypassPermissions | bypassPermissions |
 
-From the session transcript (`81b8d17e`), so these numbers are counted, not estimated.
-Scratch workspace, `permissionMode: auto`, desktop entrypoint, v2.1.266.
+## The three shapes
 
-| | |
-|---|---|
-| Prompt sent | 11:50:00 |
-| File delivered | 12:02:24 — **12.4 min** |
-| Assistant turns | 54 |
-| Thinking blocks | 22 |
-| Tool calls | 28 total, 24 in the build |
-| Distinct tools | Bash ×12, browser_batch ×7, javascript_tool ×5, preview_start, resize_window, SendUserFile, ListAgents |
-| Output tokens (build) | 148,478 · cache reads 5.94M |
+**Opus 5 front-loads everything.** Zero tool calls for 7.6 minutes, then one Bash
+call carrying a 36,681-character heredoc — the entire file in a single action —
+then 4.8 minutes of browser verification, then delivery. It never used Write or
+Edit; everything went through Bash, which is what its harness asks for in auto mode.
+This is why it *felt* fastest: nothing visible happened, and then the artifact existed.
 
-The shape matters more than the total. **Zero tool calls for the first 7.6 minutes**,
-then a single Bash call carrying a 36,681-character heredoc — the whole file, written
-in one action. Then 4.8 minutes of verification: local http server, browser, viewport
-probes, JS introspection, console checks. Delivered at 12.4 min.
+**hy4 thinks first, then grinds.** 12.5 minutes before its first tool call, the file
+written at +15.2 min, then ten Edits interleaved with five Playwright scripts and
+screenshot reads, delivered at +26.1 min. Its own summary claimed "~12 min" and
+"~52 tool calls" — the transcript says 26.1 min and 61 calls. Its list of six
+distinct tools was exactly right.
 
-That is why it *felt* faster than it was. Nothing visible happened for seven and a
-half minutes, and then the artifact existed whole.
+**astra plans first, in public.** Its very first action, 42 seconds in, is
+`Skill: recommend-experts` — it summons a FrontendDeveloper expert before doing
+anything else, then loads `agent-browser` and `find-skills`, then files three
+`TaskCreate` tickets (build / validate / deliver). The HTML doesn't get written
+until +22.9 min. Eleven Edits and three purpose-written test harnesses follow, and
+it delivers at +61.3 min — roughly five times Opus 5's wall clock and 13× hy4's
+credit spend. **Twenty of its 75 calls are task bookkeeping** (`TaskCreate`,
+`TaskGet`, `TaskUpdate`, `TaskList`, `TaskOutput`): a quarter of its tool budget
+went on tracking its own plan.
 
-Notably it never used Write or Edit. Everything went through Bash, which is what the
-harness asks for in auto mode.
+Its two `AskUserQuestion` calls and both `WebFetch` calls happened *after* delivery,
+during the follow-up about session metadata. Nothing was fetched from the network
+while the artifact was being built.
 
-## Reported: Workbuddy / hy4
+## The "hy4" run is half minimax-m3
 
-From the agent's own summary, not independently verifiable:
+Worth knowing, because this repo labels runs by model. In that session the transcript
+attributes **31 of the 61 tool calls to `minimax-m3`**, not to `hy4-preview` — a
+switch at 15:07:11 that lasts to the end of the run. Everything in the final stretch
+is minimax's: four Edits at 15:07, the note-name investigation, the zoom and loop
+smoke tests, the last fix at 15:11:03, the memory note, and the delivery itself.
+Reasoning rows split 21 / 17 the same way.
 
-- ~12 min, ~52 tool calls — **its own tally, with an explicit caveat that no
-  authoritative counter is exposed to it**.
-- 6 distinct tools: Bash, Write, Edit, Read, Grep, `present_files`.
-- A theory test harness covering all 672 chords (12 roots × 2 scales × 7 degrees ×
-  4 variations), Playwright smoke tests, 8 screenshot inspections, 5 bug fixes.
-- Its audit log holds 34 records across 26 distinct tool-call ids, but it is a
-  *security* log — sandboxed commands and approval-gated writes only, so it cannot
-  stand in for a call count.
+The log records the switch but not the reason for it. Either way, the artifact in
+`runs/workbuddy-ai/hy4/` is not the work of one model, and the folder name overstates
+the case.
 
-## Neither run was a single uninterrupted pass
+## Nobody delivered in one pass
 
-Worth stating plainly, because it bears on the one rule. After writing the file, the
-Claude Code run patched it three times (t+8.6m, t+10.1m, t+10.4m), seven replacements
-in all:
+Opus 5 patched its file three times after writing it (seven replacements), including
+a real theory bug: the first draft emitted `ø7` and a bare `+'7'` for seventh romans,
+so `Imaj7` would have read `I7`. It also moved the keyboard cap twice, landing on
+`min(100%,340px)` — the value that causes the dead space on tall phones. hy4 made ten
+Edits, astra eleven.
 
-1. **A real theory bug.** The first draft emitted `ø7` and a bare `+'7'` for seventh
-   romans, so `Imaj7` would have read `I7`. Replaced with a quality-aware lookup.
-   This is precisely the failure the prompt front-loads theory to prevent, and the
-   model caught it in its own browser pass.
-2. **Keyboard height, twice** — `clamp(90px,34vh,230px)` → `clamp(90px,42vh,260px)` →
-   `min(100%,340px)`. That last value is the one in the landed file, and it is the
-   cause of the dead space on tall phones.
-3. Two `white-space:nowrap` fixes, and the mute button renamed from
-   "Loop sound / Loop muted" to "Sound / Muted".
-
-Workbuddy reports five Edit-tool bug fixes of its own.
-
-So the rule here is not "the model's first tokens, untouched." It is **one prompt, one
-delivered answer** — the agent's internal verify-and-fix loop happens inside that
-answer. Retries are what's banned, and neither run retried.
+So the rule here is **one prompt, one delivered answer** — the verify-and-fix loop
+happens inside that answer. Retries are what's banned, and none of the three retried.
 
 ## Where the testing looked is where the artifact is sound
 
 The verification styles predict the weak spots almost exactly.
 
-Workbuddy tested *theory* exhaustively and its theory is flawless — E♭ minor yields
-`C♭`, the case that catches most implementations. But it shipped two faults only a
-browser pass would surface: the register jumping between variations of one chord, and
-`C♭3` where the pitch name is `C♭4`.
-
-Claude Code verified *in the browser* and caught its own theory bug there, but left
-the layout loose on tall screens.
+- **hy4** tested theory exhaustively and its theory is nearly flawless — E♭ minor
+  yields `C♭`, the case that catches most implementations. But it shipped two faults
+  only a browser pass surfaces: the register jumping between variations of one chord,
+  and `C♭3` where the pitch name is `C♭4`.
+- **Opus 5** verified in the browser and caught its own theory bug there, but left
+  the layout loose on tall screens.
+- **astra** spent the most time and wrote the most tests, and it is the only one with
+  neither class of fault — correct `C♭4`, stable register, separate manual and loop
+  audio buses. It paid about five times the wall clock for that.
 
 Each artifact is weakest exactly where its own testing wasn't pointed.
