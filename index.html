@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>zero-shot-arcade</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #171a23;
+    --line: #262a36;
+    --ink: #e8eaf0;
+    --dim: #9aa1b1;
+    --accent: #ffd166;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 48px 24px 80px;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  h1 {
+    font-size: 28px;
+    letter-spacing: 2px;
+    margin: 0 0 6px;
+    color: var(--accent);
+  }
+  .tag { color: var(--dim); margin: 0 0 8px; }
+  .sub { color: var(--dim); font-size: 13px; margin: 0 0 40px; }
+  .sub a { color: var(--dim); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 22px;
+  }
+  .card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color .15s, transform .15s;
+  }
+  .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+  .shot {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+    background: #000;
+    border-bottom: 1px solid var(--line);
+  }
+  .shot iframe {
+    width: 800px;
+    height: 600px;
+    border: 0;
+    transform: scale(.42);
+    transform-origin: top left;
+    pointer-events: none;
+  }
+  .shot::after {
+    content: "▶ play";
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(15,17,23,.72);
+    color: var(--accent);
+    letter-spacing: 2px;
+    opacity: 0;
+    transition: opacity .15s;
+  }
+  .card:hover .shot::after { opacity: 1; }
+
+  .meta { padding: 14px 16px 16px; }
+  .meta h2 { font-size: 15px; margin: 0 0 4px; font-weight: 600; }
+  .meta .model { color: var(--accent); font-size: 12px; letter-spacing: 1px; }
+  .meta .note { color: var(--dim); font-size: 12px; margin-top: 8px; }
+
+  footer { margin-top: 56px; color: var(--dim); font-size: 12px; }
+  footer a { color: var(--dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ZERO-SHOT ARCADE</h1>
+  <p class="tag">One prompt. No retries. Whatever comes out, goes in.</p>
+  <p class="sub">
+    Things frontier models made in a single shot — little HTML5 games and browser music
+    toys. Not a benchmark. Nothing here is rigorous.
+    <a href="https://github.com/LironHazan/zero-shot-arcade">source</a>
+  </p>
+
+  <div class="grid" id="grid"></div>
+
+  <footer>MIT · built for fun</footer>
+</div>
+
+<script>
+// Add an entry here when a new one-shot lands in runs/.
+const ENTRIES = [
+  {
+    title: "Super Clone 1-1",
+    model: "hy4",
+    path: "runs/workbuddy-ai/hy4/mario.html",
+    note: "Platformer, single file, vanilla canvas. Goombas, coins, fireballs."
+  }
+];
+
+document.getElementById("grid").innerHTML = ENTRIES.map(e => `
+  <a class="card" href="${e.path}">
+    <div class="shot"><iframe src="${e.path}" loading="lazy" tabindex="-1" scrolling="no"></iframe></div>
+    <div class="meta">
+      <h2>${e.title}</h2>
+      <div class="model">${e.model}</div>
+      <div class="note">${e.note}</div>
+    </div>
+  </a>
+`).join("");
+</script>
+</body>
+</html>
