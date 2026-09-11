@@ -43,7 +43,35 @@ Verified in-browser before landing:
 
 ### Your take
 
-## gpt-6-astra — pending
+## gpt-6-astra — `runs/workbuddy-ai/gpt-6-astra/chord-coach.html`
+
+Verified in-browser before landing:
+
+- Opens clean, no console errors. Audio confirmed the same way (one context,
+  6 partials + noise transient + compressor, `running`).
+- The most careful iOS handling of the three: it gates unlocking on
+  `event.isTrusted`, actually appends the silent `<audio>` element to the DOM,
+  deliberately leaves its volume at 1 so the playback session really opens, and
+  reports state in the UI — "Audio ready · check device volume".
+- Separate manual and loop gain buses, so mute silences only the loop and your
+  own key presses stay audible. The other two runs mute everything.
+- Theory correct throughout: F major `B♭ IV` / `Edim vii°`; A minor and its
+  sevenths; E♭ minor spells `E♭m Fdim G♭ A♭m B♭m C♭ D♭`.
+- Gets the case hy4 missed: it labels the B key `C♭4`, not `C♭3` — octave is
+  derived from letter plus accidental, not from the MIDI number.
+- Register stays put across variations — F root F3–A3–C4, seventh F3–A3–C4–E4,
+  first inversion A3–C4–F4. No octave jumping.
+- Extras nobody asked for: voice disposal with a 40-voice cap, musical position
+  preserved across tempo changes, resume mid-bar without a second count-in,
+  per-key aria labels, computer-key letters printed on the keys.
+- Deviations from the prompt: roots are a `<select>` dropdown rather than twelve
+  visible buttons, and the chord row keeps showing triad symbols in seventh mode
+  (the seventh appears only above the keyboard).
+- Weak spot: it breaks "never scrolls" on purpose. `@media(max-height:560px)`
+  sets `min-height:580px`, so at 375×520 the page scrolls (580 > 520) instead of
+  clipping. Fine at both named targets and at 1440×900, where `main` caps at 760px.
+
+### Your take
 
 ---
 
