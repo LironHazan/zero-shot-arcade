@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en" data-page-node-id="J770EC4RqIWOMmcHSgEpT4">
+<head data-page-node-id="K4FaEd11li5O85yHMamgtV">
+<meta charset="utf-8" data-page-node-id="J1y2aeRQ4NoQny9uBn6AgB">
+<meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="dXrB1W1sfUFTTfiZBhlnN0">
+<meta name="color-scheme" content="dark" data-page-node-id="FC1RvRosEHFy0yyM1OuHTU">
+<title>Chord Coach — the diatonic chords of a scale</title>
+<style>
+/* ==========================================================================
+   PALETTE / TYPE  (exactly as specified)
+   background #0f1117 | panels #171a23 | borders #262a36
+   text #e8eaf0 | dimmed #9aa1b1 | accent #ffd166
+   ========================================================================== */
+:root{
+  --bg:#0f1117;
+  --panel:#171a23;
+  --border:#262a36;
+  --text:#e8eaf0;
+  --dim:#9aa1b1;
+  --accent:#ffd166;
+  --accent-ink:#14100a;          /* text drawn on top of the accent colour */
+  --accent-soft:#f2d489;         /* chord tone on a white key */
+  --accent-deep:#9a7326;         /* chord tone on a black key */
+  --gap:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font:400 14px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  -webkit-tap-highlight-color:transparent;   /* no grey flash on tap */
+  -webkit-text-size-adjust:100%;
+  user-select:none;-webkit-user-select:none;
+}
+button{
+  font:inherit;color:inherit;background:none;border:0;cursor:pointer;
+  touch-action:manipulation;                 /* kills the 300ms double-tap-zoom wait */
+  -webkit-tap-highlight-color:transparent;
+}
+
+/* ---------- shell: one screen, five stacked sections, no scrolling -------- */
+#app{
+  height:100vh;height:100dvh;
+  display:flex;flex-direction:column;
+  gap:var(--gap);
+  padding:10px;
+  justify-content:space-between;             /* any spare height is spread evenly */
+  overflow:hidden;
+}
+#app > section{flex:0 0 auto}
+
+/* ---------- generic controls ---------- */
+.row{display:flex;align-items:center;gap:6px}
+.btn{
+  background:var(--panel);border:1px solid var(--border);border-radius:6px;
+  padding:5px 8px;color:var(--dim);white-space:nowrap;
+  font-size:clamp(9px,2.2vw,12px);
+}
+.btn:hover{border-color:#3a4053;color:var(--text)}
+.btn.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+
+/* ---------- 1. root selector + major/minor (and the two display toggles) --- */
+#rootLine{display:flex;gap:3px}
+#rootLine .r{
+  flex:1 1 0;min-width:0;height:28px;
+  background:var(--panel);border:1px solid var(--border);border-radius:5px;
+  color:var(--dim);font-size:clamp(9px,2.4vw,12px);text-align:center;
+  display:flex;align-items:center;justify-content:center;
+}
+#rootLine .r.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+#optLine{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
+
+/* ---------- 2. the seven diatonic chords ---------- */
+#chordRow{display:flex;gap:5px}
+#chordRow .c{
+  flex:1 1 0;min-width:0;height:52px;
+  background:var(--panel);border:1px solid var(--border);border-radius:6px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:2px;overflow:hidden;
+}
+#chordRow .c .sym{font-size:clamp(9px,2.4vw,13px);color:var(--text);line-height:1.1}
+#chordRow .c .rn{font-size:clamp(8px,2vw,11px);color:var(--dim);line-height:1.3}
+#chordRow .c.on{background:var(--accent);border-color:var(--accent)}
+#chordRow .c.on .sym,#chordRow .c.on .rn{color:var(--accent-ink);font-weight:700}
+#chordRow .c.next{border-color:var(--accent)}
+#chordRow .c.next .rn{color:var(--accent)}
+
+/* ---------- 3. the four variations ---------- */
+#varRow{display:flex;gap:5px}
+#varRow .v{
+  flex:1 1 0;min-width:0;height:44px;
+  background:var(--panel);border:1px solid var(--border);border-radius:6px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:2px;overflow:hidden;
+}
+#varRow .v .t{font-size:clamp(8px,2.2vw,12px);color:var(--text);line-height:1.15}
+#varRow .v .f{font-size:clamp(7.5px,2vw,11px);color:var(--dim);line-height:1.25}
+#varRow .v.on{background:var(--accent);border-color:var(--accent)}
+#varRow .v.on .t,#varRow .v.on .f{color:var(--accent-ink);font-weight:700}
+
+/* ---------- 4. the keyboard (visual anchor) ---------- */
+#kbWrap{display:flex;flex-direction:column;gap:4px}
+#chordInfo{
+  font-size:clamp(8.5px,2.1vw,12px);color:var(--dim);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#chordInfo b{color:var(--accent);font-weight:700}
+#chordInfo i{color:var(--text);font-style:normal}
+#keyboard{
+  position:relative;width:100%;
+  background:#080a0e;border:1px solid var(--border);border-radius:6px;
+  overflow:hidden;
+  --fs:10px;                                  /* set from JS on resize */
+}
+.key{
+  position:absolute;top:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  border-radius:0 0 4px 4px;
+  touch-action:manipulation;
+  overflow:hidden;
+}
+.key.white{
+  background:linear-gradient(#fbfcfe,#dfe3ea);
+  border:1px solid #aeb5c2;border-top:0;color:#2b303b;z-index:1;
+}
+.key.black{
+  background:linear-gradient(#313746,#0d0f15);
+  border:1px solid #04050a;border-top:0;color:#e8eaf0;z-index:2;
+}
+.key .nm{font-size:var(--fs);line-height:1;margin-bottom:5%;letter-spacing:-0.02em}
+.key.white.mc .nm{padding-bottom:1px;border-bottom:2px solid var(--accent)}  /* middle C marker */
+.key .fg{
+  visibility:hidden;
+  width:calc(var(--fs) * 1.9);height:calc(var(--fs) * 1.9);
+  border-radius:50%;background:var(--accent);color:var(--accent-ink);
+  font-size:calc(var(--fs) * 1.05);font-weight:700;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:8%;
+}
+.key.black .fg{width:calc(var(--fs)*1.55);height:calc(var(--fs)*1.55);font-size:calc(var(--fs)*0.85)}
+.key .fg.has{visibility:visible}
+/* chord tone / root of the chord */
+.key.chord{background:var(--accent-soft);color:#241a05}
+.key.black.chord{background:var(--accent-deep);color:#ffe9b0}
+/* root styling outranks the chord-tone rules above, including on black keys */
+.key.root,.key.black.root,.key.white.root{
+  background:var(--accent);color:var(--accent-ink);box-shadow:inset 0 0 0 2px #fff3cf
+}
+.key.pressed{filter:brightness(0.86)}
+#keyboard.noname .nm{visibility:hidden}
+
+/* ---------- 5. practice transport ---------- */
+#transport{display:flex;flex-direction:column;gap:6px}
+#playBtn{min-width:64px}
+#tempo{
+  flex:1 1 auto;min-width:50px;height:22px;background:transparent;
+  -webkit-appearance:none;appearance:none;accent-color:var(--accent);
+}
+#tempo::-webkit-slider-runnable-track{height:4px;background:var(--border);border-radius:2px}
+#tempo::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);margin-top:-5px}
+#tempo::-moz-range-track{height:4px;background:var(--border);border-radius:2px}
+#tempo::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:var(--accent)}
+#bpmVal{font-size:clamp(9px,2.2vw,12px);color:var(--text);min-width:2.6em;text-align:right}
+.unit{font-size:clamp(8px,2vw,10px);color:var(--dim)}
+#beats{display:flex;gap:4px;margin-left:2px}
+#beats .b{width:7px;height:7px;border-radius:50%;background:var(--border)}
+#beats .b.on{background:var(--accent)}
+#beats .b.ci{background:#4a5266}
+#status{font-size:clamp(8px,2vw,10px);color:var(--dim);min-width:5.2em}
+#progRow{display:flex;gap:5px}
+#progRow .p{
+  flex:1 1 0;min-width:0;height:26px;
+  background:var(--panel);border:1px solid var(--border);border-radius:5px;
+  color:var(--dim);font-size:clamp(8.5px,2.2vw,12px);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap;
+}
+#progRow .p.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+</style>
+</head>
+<body data-page-node-id="5wf103YhV1iyINYEN9QXcE">
+
+<div id="app" data-page-node-id="GEm3wtZ4FgAhhVMvZPz5PR">
+
+  <!-- 1 ------------------------------------------------------------------ -->
+  <section id="rootBlock" data-page-node-id="pX1DVpKzf2AJ3EWjBiYox5">
+    <div id="rootLine" data-page-node-id="tg2f4wcLeh5oFjQwwRxYmr"></div>
+    <div id="optLine" data-page-node-id="4pqG6BX9qnrtrDy7JmvaBz">
+      <button class="btn" id="majBtn" data-s="major" data-page-node-id="Ki82qLl5Y5NA0PuGPEOlFe">Major</button>
+      <button class="btn" id="minBtn" data-s="minor" data-page-node-id="x7ZUoLCG3NGQpRxWaZqss6">Minor</button>
+      <button class="btn" id="nameBtn" data-page-node-id="Cf5DyU5XR4FkVpb2cfWsEN">Note names</button>
+      <button class="btn" id="handBtn" data-page-node-id="i2ZY18kT7wPzZXfVltw0BZ">Hand: RH</button>
+    </div>
+  </section>
+
+  <!-- 2 ------------------------------------------------------------------ -->
+  <section id="chordRow" data-page-node-id="0Os8NUjdPCf4JPamoL3QIa"></section>
+
+  <!-- 3 ------------------------------------------------------------------ -->
+  <section id="varRow" data-page-node-id="BS3hgiymBVSiomkCXtyi6U"></section>
+
+  <!-- 4 ------------------------------------------------------------------ -->
+  <section id="kbWrap" data-page-node-id="BSgU3zXQ6UqhvQ1AgiLGmD">
+    <div id="chordInfo" data-page-node-id="0xEBNouczfXA1jxoqi8AbH"></div>
+    <div id="keyboard" data-page-node-id="a01EytW9XWYY9ICPkdyHmK"></div>
+  </section>
+
+  <!-- 5 ------------------------------------------------------------------ -->
+  <section id="transport" data-page-node-id="SqTLX152FTJpdHbT1c0VBK">
+    <div class="row" data-page-node-id="t1J0Q3Pg4aAw8m585FHHk3">
+      <button class="btn" id="playBtn" data-page-node-id="AZFfx8d9fB6dO6xCHctLKH">&#9654; Play</button>
+      <input id="tempo" type="range" min="40" max="160" step="1" value="80" aria-label="Tempo in beats per minute" data-page-node-id="kj4O0t7hMV1Mg1VhuNioNl">
+      <span id="bpmVal" data-page-node-id="9JPQIq8zR455LKBBIZbGEC">80</span><span class="unit" data-page-node-id="8MSRhOzxE8iFxMTLDQmLcP">bpm</span>
+      <button class="btn" id="muteBtn" data-page-node-id="u6wDSEOZSDZv3gVMIIabjA">Mute</button>
+      <div id="beats" data-page-node-id="Ib0YGLYdY2EOwMZ76YYloj"><span class="b" data-page-node-id="GX06UzGwN8x4atwP17hPN3"></span><span class="b" data-page-node-id="AlH7U30qZVkpw0RMIFdfqW"></span><span class="b" data-page-node-id="MVCpO4fzMg2EOwV2WGhrBe"></span><span class="b" data-page-node-id="jrnO0rdKGFEorruxGiUGCS"></span></div>
+      <span id="status" data-page-node-id="5i8p339a5adjnCtU4QWI8j"></span>
+    </div>
+    <div id="progRow" data-page-node-id="XtIMPs4wHe4KdXvPOa3txB"></div>
+  </section>
+
+</div>
+
+<script>
+/* =========================================================================
+   CHORD COACH
+   Vanilla JS + Web Audio + DOM only. No modules (so it works over file://),
+   no fetch, no libraries, no external assets.
+   ========================================================================= */
+(function () {
+'use strict';
+
+/* =========================================================================
+   1. MUSIC THEORY — data and spelling. This part must be exactly right.
+   ========================================================================= */
+
+var LETTERS   = ['C','D','E','F','G','A','B'];
+var LETTER_PC = [0, 2, 4, 5, 7, 9, 11];       // natural pitch class of each letter
+
+var MAJOR = [0, 2, 4, 5, 7, 9, 11];           // scale degrees in semitones
+var MINOR = [0, 2, 3, 5, 7, 8, 10];           // natural minor
+
+// Which letter a tonic of each pitch class uses, and which accidental family
+// the key is spelled in. This single table is what guarantees F major reads
+// F G A Bb C D E (never A#) and Eb minor reads Eb F Gb Ab Bb Cb Db.
+var KEY_SPELL = {
+  major: [                                    // index = pitch class
+    {l:0, f:'natural'},   // C
+    {l:1, f:'flat'},      // Db
+    {l:1, f:'sharp'},     // D
+    {l:2, f:'flat'},      // Eb
+    {l:2, f:'sharp'},     // E
+    {l:3, f:'flat'},      // F
+    {l:3, f:'sharp'},     // F#
+    {l:4, f:'sharp'},     // G
+    {l:5, f:'flat'},      // Ab
+    {l:5, f:'sharp'},     // A
+    {l:6, f:'flat'},      // Bb
+    {l:6, f:'sharp'}      // B
+  ],
+  minor: [
+    {l:0, f:'flat'},      // C  minor
+    {l:0, f:'sharp'},     // C# minor
+    {l:1, f:'flat'},      // D  minor
+    {l:2, f:'flat'},      // Eb minor
+    {l:2, f:'sharp'},     // E  minor
+    {l:3, f:'flat'},      // F  minor
+    {l:3, f:'sharp'},     // F# minor
+    {l:4, f:'flat'},      // G  minor
+    {l:4, f:'sharp'},     // G# minor
+    {l:5, f:'natural'},   // A  minor
+    {l:6, f:'flat'},      // Bb minor
+    {l:6, f:'sharp'}      // B  minor
+  ]
+};
+
+// chromatic fallback spellings for notes that are not in the key
+var SHARP_NAMES = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+var FLAT_NAMES  = ['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
+
+var SHARP = '♯', FLAT = '♭';
+
+function accChar(diff) {                       // diff in semitones from the natural letter
+  if (diff === 0) return '';
+  if (diff === 1) return SHARP;
+  if (diff === 2) return SHARP + SHARP;
+  if (diff === -1) return FLAT;
+  if (diff === -2) return FLAT + FLAT;
+  return (diff > 0 ? SHARP : FLAT).repeat(Math.abs(diff));
+}
+function pretty(name) {                        // 'C#' -> 'C♯',  'Bb' -> 'B♭'
+  return name.replace(/#/g, SHARP).replace(/b/g, FLAT);
+}
+
+// The seven spellings of the current key, degree 0..6.
+// Letter names always ascend one letter per degree (so we never mix sharps
+// and flats inside one scale), the accidental is whatever it has to be.
+function spellScale(rootPc, scale) {
+  var spec = KEY_SPELL[scale][rootPc];
+  var steps = (scale === 'major') ? MAJOR : MINOR;
+  var out = [];
+  for (var d = 0; d < 7; d++) {
+    var li = (spec.l + d) % 7;
+    var pc = (rootPc + steps[d]) % 12;
+    var diff = (pc - LETTER_PC[li] + 12) % 12;
+    if (diff > 6) diff -= 12;                  // shortest way round the circle
+    out.push({ letter: LETTERS[li], acc: accChar(diff), pc: pc,
+               name: LETTERS[li] + accChar(diff) });
+  }
+  return out;
+}
+
+// chord qualities per degree
+var TRIAD = {
+  major: [
+    {q:'M', rn:'I'},    {q:'m', rn:'ii'},   {q:'m', rn:'iii'}, {q:'M', rn:'IV'},
+    {q:'M', rn:'V'},    {q:'m', rn:'vi'},   {q:'d', rn:'vii°'}
+  ],
+  minor: [
+    {q:'m', rn:'i'},    {q:'d', rn:'ii°'},  {q:'M', rn:'III'}, {q:'m', rn:'iv'},
+    {q:'m', rn:'v'},    {q:'M', rn:'VI'},   {q:'M', rn:'VII'}
+  ]
+};
+var SEVENTH = {
+  major: [
+    {q:'maj7', rn:'Imaj7'},  {q:'m7',  rn:'iim7'},   {q:'m7',  rn:'iiim7'}, {q:'maj7', rn:'IVmaj7'},
+    {q:'7',    rn:'V7'},     {q:'m7',  rn:'vim7'},   {q:'m7b5',rn:'viim7♭5'}
+  ],
+  minor: [
+    {q:'m7',   rn:'im7'},    {q:'m7b5',rn:'iim7♭5'}, {q:'maj7',rn:'IIImaj7'}, {q:'m7', rn:'ivm7'},
+    {q:'m7',   rn:'vm7'},    {q:'maj7',rn:'VImaj7'}, {q:'7',   rn:'VII7'}
+  ]
+};
+var INTERVALS = {
+  'M':[0,4,7], 'm':[0,3,7], 'd':[0,3,6],
+  'maj7':[0,4,7,11], 'm7':[0,3,7,10], '7':[0,4,7,10], 'm7b5':[0,3,6,10]
+};
+var SUFFIX = {'M':'', 'm':'m', 'd':'dim', 'maj7':'maj7', 'm7':'m7', '7':'7', 'm7b5':'m7♭5'};
+
+// The four variations, always in this order.
+// intervals: how far above the chord root each sounding note sits.
+// fingers are listed bottom note -> top note.
+var VARIATIONS = [
+  { title:'Root position', formula:'root–3rd–5th',
+    rel:function(iv){ return [iv[0], iv[1], iv[2]]; },           rh:[1,3,5],   lh:[5,3,1] },
+  { title:'1st inversion', formula:'3rd–5th–root',
+    rel:function(iv){ return [iv[1], iv[2], iv[0] + 12]; },      rh:[1,2,5],   lh:[5,3,1] },
+  { title:'2nd inversion', formula:'5th–root–3rd',
+    rel:function(iv){ return [iv[2], iv[0] + 12, iv[1] + 12]; }, rh:[1,3,5],   lh:[5,2,1] },
+  { title:'Seventh',       formula:'root–3rd–5th–7th',
+    rel:function(iv){ return iv.slice(); },                      rh:[1,2,3,5], lh:[5,3,2,1] }
+];
+
+// The four preset progressions for each scale.
+var PROGRESSIONS = {
+  major: [
+    {label:'I–V–vi–IV', deg:[0,4,5,3]},
+    {label:'I–IV–V–I',  deg:[0,3,4,0]},
+    {label:'ii–V–I',    deg:[1,4,0]},
+    {label:'I–vi–IV–V', deg:[0,5,3,4]}
+  ],
+  minor: [
+    {label:'i–iv–v',        deg:[0,3,4]},
+    {label:'i–VI–III–VII',  deg:[0,5,2,6]},
+    {label:'i–iv–VII–III',  deg:[0,3,6,2]},
+    {label:'ii°–v–i',       deg:[1,4,0]}
+  ]
+};
+
+var LO_MIDI = 48, HI_MIDI = 72;                // the fixed window: C3 .. C5
+var WHITE_COUNT = 15;                          // two octaves + final C
+var BLACK_PC = {1:1, 3:1, 6:1, 8:1, 10:1};     // pitch classes that are black keys
+var MIDI_C4 = 60;
+
+/* =========================================================================
+   2. STATE  (plain JS, nothing persisted)
+   ========================================================================= */
+var state = {
+  rootPc: 0,          // pitch class of the tonic
+  scale: 'major',     // 'major' | 'minor'
+  degree: 0,          // 0..6 which diatonic chord is shown
+  variation: 0,       // 0..3
+  hand: 'RH',         // 'RH' | 'LH'
+  showNames: true,
+  bpm: 80,
+  muted: false,
+  progIdx: 0,
+  playing: false
+};
+
+var degrees = [];     // spellings of the current scale
+var keyNames = {};    // pitch class -> note name, for keyboard labels
+
+/* =========================================================================
+   3. DOM
+   ========================================================================= */
+var app       = document.getElementById('app');
+var rootLine  = document.getElementById('rootLine');
+var chordRow  = document.getElementById('chordRow');
+var varRow    = document.getElementById('varRow');
+var kbWrap    = document.getElementById('kbWrap');
+var chordInfo = document.getElementById('chordInfo');
+var keyboard  = document.getElementById('keyboard');
+var transport = document.getElementById('transport');
+var progRow   = document.getElementById('progRow');
+var playBtn   = document.getElementById('playBtn');
+var muteBtn   = document.getElementById('muteBtn');
+var tempo     = document.getElementById('tempo');
+var bpmVal    = document.getElementById('bpmVal');
+var statusEl  = document.getElementById('status');
+var beatsEl   = document.getElementById('beats');
+var beatEls   = beatsEl.children;
+var rootBtns = [], chordBtns = [], varBtns = [], progBtns = [], keys = [];
+
+function el(id){ return document.getElementById(id); }
+
+/* ---------- build the fixed parts (once) ---------- */
+function buildDOM() {
+  var i, b;
+
+  // twelve roots
+  for (i = 0; i < 12; i++) {
+    b = document.createElement('button');
+    b.className = 'r';
+    b.dataset.pc = i;
+    b.addEventListener('click', onRootClick);
+    rootLine.appendChild(b); rootBtns.push(b);
+  }
+
+  // seven diatonic chords
+  for (i = 0; i < 7; i++) {
+    b = document.createElement('button');
+    b.className = 'c';
+    b.dataset.deg = i;
+    b.innerHTML = '<span class="sym"></span><span class="rn"></span>';
+    b.addEventListener('click', onChordClick);
+    chordRow.appendChild(b); chordBtns.push(b);
+  }
+
+  // four variations
+  for (i = 0; i < 4; i++) {
+    b = document.createElement('button');
+    b.className = 'v';
+    b.dataset.var = i;
+    b.innerHTML = '<span class="t"></span><span class="f"></span>';
+    b.addEventListener('click', onVarClick);
+    varRow.appendChild(b); varBtns.push(b);
+  }
+
+  // four progressions
+  for (i = 0; i < 4; i++) {
+    b = document.createElement('button');
+    b.className = 'p';
+    b.dataset.prog = i;
+    b.addEventListener('click', onProgClick);
+    progRow.appendChild(b); progBtns.push(b);
+  }
+
+  buildKeyboard();
+}
+
+/* ---------- the keyboard: C3..C5, always 25 keys, never scrolls ---------- */
+function buildKeyboard() {
+  var wPct = 100 / WHITE_COUNT;
+  var bPct = wPct * 0.62;
+  var white = 0;
+  for (var m = LO_MIDI; m <= HI_MIDI; m++) {
+    var pc = m % 12;
+    var isBlack = !!BLACK_PC[pc];
+    var k = document.createElement('div');
+    k.className = 'key ' + (isBlack ? 'black' : 'white');
+    if (m === MIDI_C4) k.className += ' mc';
+    if (isBlack) {
+      k.style.width  = bPct + '%';
+      k.style.left   = (white * wPct - bPct / 2) + '%';
+      k.style.height = '62%';
+    } else {
+      k.style.width  = wPct + '%';
+      k.style.left   = (white * wPct) + '%';
+      k.style.height = '100%';
+      white++;
+    }
+    var fg = document.createElement('div'); fg.className = 'fg';
+    var nm = document.createElement('div'); nm.className = 'nm';
+    k.appendChild(fg); k.appendChild(nm);
+    k.dataset.midi = m;
+    k.addEventListener('pointerdown', onKeyDown);
+    keyboard.appendChild(k);
+    keys.push({ midi: m, el: k, fg: fg, nm: nm, black: isBlack });
+  }
+}
+
+/* =========================================================================
+   4. DERIVING THE CURRENT CHORD
+   ========================================================================= */
+function refreshTheory() {
+  degrees = spellScale(state.rootPc, state.scale);
+  var spec = KEY_SPELL[state.scale][state.rootPc];
+  var chrom = (spec.f === 'flat') ? FLAT_NAMES : SHARP_NAMES;   // naturals -> sharps
+  keyNames = {};
+  var i;
+  for (i = 0; i < 7; i++) keyNames[degrees[i].pc] = degrees[i].name;   // key signature spelling
+  for (i = 0; i < 12; i++) if (!keyNames[i]) keyNames[i] = chrom[i];   // chromatic fallback
+}
+
+// The chord shown on screen right now.
+function getChord(deg, variation) {
+  var use7  = (variation === 3);
+  var info  = use7 ? SEVENTH[state.scale][deg] : TRIAD[state.scale][deg];
+  var iv    = INTERVALS[info.q];
+  var rel   = VARIATIONS[variation].rel(iv);
+  var rootPc = degrees[deg].pc;
+
+  // Choose the octave: keep the chord near middle C, drop an octave when the
+  // upper notes would fall off the top of the fixed C3..C5 window.
+  var min = Math.min.apply(null, rel), max = Math.max.apply(null, rel);
+  var candidates = [60 + rootPc, 48 + rootPc, 36 + rootPc];
+  var base = candidates[2];
+  for (var i = 0; i < candidates.length; i++) {
+    var c = candidates[i];
+    if (c + min >= LO_MIDI && c + max <= HI_MIDI) { base = c; break; }
+  }
+  var midis = [];
+  for (i = 0; i < rel.length; i++) midis.push(base + rel[i]);
+
+  return {
+    symbol:  degrees[deg].name + SUFFIX[info.q],
+    numeral: info.rn,
+    rootPc:  rootPc,
+    midis:   midis,
+    fingers: VARIATIONS[variation][state.hand === 'RH' ? 'rh' : 'lh'],
+    formula: VARIATIONS[variation].formula
+  };
+}
+
+/* =========================================================================
+   5. AUDIO — additive piano-ish voices. No sustain stage, ever.
+   ========================================================================= */
+var AC = window.AudioContext || window.webkitAudioContext || null;
+var ctx = null, master = null, comp = null, noiseBuf = null, audioReady = false;
+var silentPrimed = false;
+
+// A tiny silent WAV, built at runtime — used only to route iOS audio through
+// the ringer-correct channel. Safari plays *nothing* on a muted iPhone unless
+// an <audio> element has started inside a user gesture.
+function makeSilentWav() {
+  var sr = 8000, len = 2000;                          // 0.25 s of silence
+  var bytes = new Uint8Array(44 + len);
+  var dv = new DataView(bytes.buffer);
+  function str(off, s) { for (var i = 0; i < s.length; i++) bytes[off + i] = s.charCodeAt(i); }
+  str(0, 'RIFF');  dv.setUint32(4, 36 + len, true);  str(8, 'WAVE');
+  str(12, 'fmt '); dv.setUint32(16, 16, true);
+  dv.setUint16(20, 1, true);   dv.setUint16(22, 1, true);   // PCM, mono
+  dv.setUint32(24, sr, true);  dv.setUint32(28, sr, true);  // byte rate
+  dv.setUint16(32, 1, true);   dv.setUint16(34, 8, true);   // block align, 8-bit
+  str(36, 'data'); dv.setUint32(40, len, true);
+  for (var i = 44; i < bytes.length; i++) bytes[i] = 0x80;  // silence = 128 in 8-bit
+  var bin = '';
+  for (i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return 'data:audio/wav;base64,' + btoa(bin);
+}
+
+function primeSilentAudio() {
+  if (silentPrimed) return;
+  silentPrimed = true;
+  try {
+    var a = new Audio();
+    a.src = makeSilentWav();
+    a.loop = true; a.volume = 0.02; a.preload = 'auto';
+    a.setAttribute('playsinline', '');
+    var p = a.play();
+    if (p && p.catch) p.catch(function () { /* ignore */ });
+  } catch (e) { /* non-fatal */ }
+}
+
+// MUST be called from inside a user gesture. Exactly one context, ever.
+function ensureAudio() {
+  if (ctx) {
+    if (ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} }
+    return ctx;
+  }
+  if (!AC) return null;                       // no Web Audio: visuals still work
+  try {
+    ctx = new AC();
+    comp = ctx.createDynamicsCompressor();    // safety net so 8 notes can't clip
+    comp.threshold.value = -14; comp.knee.value = 8; comp.ratio.value = 14;
+    comp.attack.value = 0.003;  comp.release.value = 0.28;
+    master = ctx.createGain();
+    master.gain.value = 0.12;                 // headroom for a full 8-note chord
+    comp.connect(master); master.connect(ctx.destination);
+    try { ctx.resume(); } catch (e) {}
+    primeSilentAudio();
+    if (navigator.audioSession) {              // bonus, where supported
+      try { navigator.audioSession.type = 'playback'; } catch (e) {}
+    }
+    audioReady = true;
+  } catch (e) { ctx = null; }
+  return ctx;
+}
+
+function noise() {
+  if (!noiseBuf) {
+    var n = Math.floor(ctx.sampleRate * 0.12);
+    noiseBuf = ctx.createBuffer(1, n, ctx.sampleRate);
+    var d = noiseBuf.getChannelData(0);
+    for (var i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  }
+  return noiseBuf;
+}
+
+function audioNow() { return ctx ? ctx.currentTime : performance.now() / 1000; }
+
+// One piano note: 6 sine partials, each decaying exponentially to silence.
+// There is deliberately NO sustain stage — that is what makes it read as a
+// piano rather than an organ.
+function playNote(midi, when, vel) {
+  if (state.muted) return;
+  var c = ensureAudio();
+  if (!c) return;
+  vel = vel || 1;
+  var t0  = Math.max(when || 0, c.currentTime + 0.002);
+  var f   = 440 * Math.pow(2, (midi - 69) / 12);
+  // decay: ~3.5 s at C3 down to ~1.2 s at C5
+  var dec = 3.5 * Math.pow(1.2 / 3.5, (midi - LO_MIDI) / (HI_MIDI - LO_MIDI));
+
+  for (var n = 1; n <= 6; n++) {
+    var amp = (1 / n) * Math.pow(0.72, n - 1) * 0.5 * vel;   // ~1/n amplitude
+    var T   = dec / (1 + 0.42 * (n - 1));                    // upper partials die 2-3x faster
+    var osc = c.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = f * n;
+    osc.detune.value = 0.15 * n * n;                         // a few cents: inharmonicity
+    var g = c.createGain();
+    var atk = 0.005;
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(amp, t0 + atk);           // attack well under 10 ms
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + atk + T); // decay all the way to silence
+    g.gain.setValueAtTime(0, t0 + atk + T + 0.001);
+    osc.connect(g); g.connect(comp);
+    osc.start(t0); osc.stop(t0 + atk + T + 0.03);
+  }
+
+  // hammer transient: a few ms of quiet band-passed noise
+  try {
+    var src = c.createBufferSource(); src.buffer = noise();
+    var bp = c.createBiquadFilter(); bp.type = 'bandpass';
+    bp.frequency.value = Math.min(7000, f * 5); bp.Q.value = 0.9;
+    var hg = c.createGain();
+    hg.gain.setValueAtTime(0, t0);
+    hg.gain.linearRampToValueAtTime(0.05 * vel, t0 + 0.002);
+    hg.gain.exponentialRampToValueAtTime(0.0005, t0 + 0.035);
+    src.connect(bp); bp.connect(hg); hg.connect(comp);
+    src.start(t0); src.stop(t0 + 0.09);
+  } catch (e) { /* non-fatal */ }
+}
+
+// Chords enter as an ascending arpeggio, ~80 ms apart.
+function playChord(midis, when) {
+  var t = Math.max(audioNow(), when || 0) + 0.02;
+  for (var i = 0; i < midis.length; i++) playNote(midis[i], t + i * 0.08, 1);
+}
+
+// metronome click for the count-in
+function click(when, accent) {
+  if (state.muted) return;
+  var c = ensureAudio();
+  if (!c) return;
+  var t = Math.max(when, c.currentTime + 0.002);
+  var o = c.createOscillator(); o.type = 'triangle';
+  o.frequency.value = accent ? 1500 : 1050;
+  var g = c.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(accent ? 0.5 : 0.32, t + 0.002);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+  o.connect(g); g.connect(comp);
+  o.start(t); o.stop(t + 0.09);
+}
+
+/* =========================================================================
+   6. RENDERING
+   ========================================================================= */
+function refresh() {
+  refreshTheory();
+
+  // roots — spelled correctly for the chosen scale
+  for (var i = 0; i < 12; i++) {
+    var n = spellScale(i, state.scale)[0].name;
+    rootBtns[i].textContent = n;
+    rootBtns[i].classList.toggle('on', i === state.rootPc);
+    rootBtns[i].title = n + ' ' + state.scale;
+  }
+
+  // scale toggle
+  el('majBtn').classList.toggle('on', state.scale === 'major');
+  el('minBtn').classList.toggle('on', state.scale === 'minor');
+  el('nameBtn').classList.toggle('on', state.showNames);
+  el('nameBtn').textContent = 'Note names';
+  el('handBtn').textContent = 'Hand: ' + state.hand;
+  el('handBtn').classList.toggle('on', state.hand === 'LH');
+
+  // seven chords — symbols depend on whether the seventh variation is shown
+  var use7 = (state.variation === 3);
+  for (i = 0; i < 7; i++) {
+    var info = use7 ? SEVENTH[state.scale][i] : TRIAD[state.scale][i];
+    chordBtns[i].firstChild.textContent = degrees[i].name + SUFFIX[info.q];
+    chordBtns[i].lastChild.textContent  = info.rn;
+    chordBtns[i].classList.toggle('on', i === state.degree);
+  }
+
+  // four variations
+  for (i = 0; i < 4; i++) {
+    varBtns[i].firstChild.textContent = VARIATIONS[i].title;
+    varBtns[i].lastChild.textContent  = VARIATIONS[i].formula;
+    varBtns[i].classList.toggle('on', i === state.variation);
+  }
+
+  // progressions for this scale
+  var progs = PROGRESSIONS[state.scale];
+  for (i = 0; i < 4; i++) {
+    progBtns[i].textContent = progs[i].label;
+    progBtns[i].classList.toggle('on', i === state.progIdx);
+  }
+
+  refreshKeyboard();
+  refreshInfo();
+}
+
+function refreshKeyboard() {
+  var ch = getChord(state.degree, state.variation);
+  var role = {}, fing = {};
+  for (var i = 0; i < ch.midis.length; i++) {
+    var m = ch.midis[i];
+    role[m] = (m % 12 === ch.rootPc) ? 'root' : 'tone';
+    fing[m] = ch.fingers[i];
+  }
+  keyboard.classList.toggle('noname', !state.showNames);
+  for (i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    var r = role[k.midi];
+    k.el.classList.toggle('chord', !!r);
+    k.el.classList.toggle('root', r === 'root');
+    if (r) { k.fg.textContent = fing[k.midi]; k.fg.classList.add('has'); }
+    else   { k.fg.textContent = '';           k.fg.classList.remove('has'); }
+    var name = keyNames[k.midi % 12];
+    k.nm.textContent = name + (Math.floor(k.midi / 12) - 1);
+    k.el.setAttribute('aria-label', name + (Math.floor(k.midi / 12) - 1));
+  }
+}
+
+function refreshInfo() {
+  var ch = getChord(state.degree, state.variation);
+  chordInfo.innerHTML =
+    '<b>' + ch.symbol + '</b>  ·  <i>' + ch.numeral + '</i>  ·  ' +
+    ch.formula + '  ·  ' + state.hand + ' ' + ch.fingers.join('·');
+}
+
+// highlight the chord coming next in the loop (no-op when stopped)
+function setNextMarker(deg) {
+  for (var i = 0; i < 7; i++) chordBtns[i].classList.toggle('next', deg === i);
+}
+
+/* ---------- layout: fit 800x600 and 375x667 without scrolling ---------- */
+function layout() {
+  var used = el('rootBlock').offsetHeight + chordRow.offsetHeight +
+             varRow.offsetHeight + transport.offsetHeight +
+             chordInfo.offsetHeight;
+  var gaps = 8 * 4 + 4;                       // 4 gaps between sections + info/key gap
+  var pad  = 20;                              // #app padding
+  var avail = app.clientHeight - used - gaps - pad - 2;
+  var w = kbWrap.clientWidth || keyboard.clientWidth || 300;
+  var ideal = (w / WHITE_COUNT) * 6.6;        // piano-ish white key proportion
+  var h = Math.max(60, Math.min(avail, ideal * 1.25));
+  keyboard.style.height = h + 'px';
+  var fs = Math.max(6.5, Math.min(13, (w / WHITE_COUNT) * 0.33));
+  keyboard.style.setProperty('--fs', fs.toFixed(2) + 'px');
+}
+
+/* =========================================================================
+   7. INTERACTION
+   ========================================================================= */
+function onRootClick(e) {
+  state.rootPc = parseInt(e.currentTarget.dataset.pc, 10);
+  refresh();
+}
+function onChordClick(e) {
+  state.degree = parseInt(e.currentTarget.dataset.deg, 10);
+  refresh();
+  playChord(getChord(state.degree, state.variation).midis, audioNow());
+}
+function onVarClick(e) {
+  state.variation = parseInt(e.currentTarget.dataset.var, 10);
+  refresh();
+}
+function onProgClick(e) {
+  state.progIdx = parseInt(e.currentTarget.dataset.prog, 10);
+  refresh();
+  if (state.playing) {                        // jump to bar 1 of the new progression
+    events = []; nextBarIndex = 1; nextBarTime = audioNow() + 0.06;
+    scheduleAhead();
+  }
+}
+function onKeyDown(e) {
+  var midi = parseInt(e.currentTarget.dataset.midi, 10);
+  playNote(midi, audioNow(), 1);
+  e.currentTarget.classList.add('pressed');
+  (function (node) { setTimeout(function () { node.classList.remove('pressed'); }, 220); })(e.currentTarget);
+  if (e.preventDefault) e.preventDefault();
+}
+
+el('majBtn').addEventListener('click', function () { state.scale = 'major'; refresh(); });
+el('minBtn').addEventListener('click', function () { state.scale = 'minor'; refresh(); });
+el('nameBtn').addEventListener('click', function () {
+  state.showNames = !state.showNames; refresh();
+});
+el('handBtn').addEventListener('click', function () {
+  state.hand = (state.hand === 'RH') ? 'LH' : 'RH'; refresh();
+});
+tempo.addEventListener('input', function () {
+  state.bpm = parseInt(tempo.value, 10);
+  bpmVal.textContent = state.bpm;
+});
+muteBtn.addEventListener('click', function () {
+  state.muted = !state.muted; updateTransport();
+});
+playBtn.addEventListener('click', function () { togglePlay(); });
+
+function updateTransport() {
+  playBtn.innerHTML = state.playing ? '&#10074;&#10074; Pause' : '&#9654; Play';
+  playBtn.classList.toggle('on', state.playing);
+  muteBtn.textContent = state.muted ? 'Muted' : 'Mute';
+  muteBtn.classList.toggle('on', state.muted);
+  tempo.value = state.bpm; bpmVal.textContent = state.bpm;
+  if (!state.playing) { setNextMarker(-1); statusEl.textContent = ''; paintBeats(-1, false); }
+}
+
+function paintBeats(beat, countIn) {
+  for (var i = 0; i < 4; i++) {
+    var on = (beat >= 0 && i <= beat);
+    beatEls[i].classList.toggle('on', on && !countIn);
+    beatEls[i].classList.toggle('ci', on && countIn);
+  }
+}
+
+/* =========================================================================
+   8. THE PRACTICE LOOP
+   One chord per bar in 4/4. A one-bar count-in first. Look-ahead scheduling
+   for audio, requestAnimationFrame for the picture, so muting never stops
+   the highlight.
+   ========================================================================= */
+var events = [];
+var nextBarTime = 0, nextBarIndex = 0, loopTimer = null, lastCur = null, lastNext = -2;
+
+function barDur() { return 4 * 60 / state.bpm; }
+
+function pushEvent(e) {
+  events.push(e);
+  if (events.length > 10) events = events.slice(-6);
+}
+
+function scheduleAhead() {
+  if (!state.playing) return;
+  var horizon = audioNow() + 0.3;
+  var guard = 0;
+  while (nextBarTime < horizon && guard++ < 32) {
+    var dur = barDur();
+    var prog = PROGRESSIONS[state.scale][state.progIdx];
+    if (nextBarIndex === 0) {
+      for (var b = 0; b < 4; b++) click(nextBarTime + b * dur / 4, b === 0);
+      pushEvent({ time: nextBarTime, dur: dur, degree: -1, countIn: true, barNo: -1 });
+    } else {
+      var barNo = nextBarIndex - 1;
+      var deg   = prog.deg[barNo % prog.deg.length];
+      if (!state.muted) playChord(getChord(deg, state.variation).midis, nextBarTime);
+      pushEvent({ time: nextBarTime, dur: dur, degree: deg, countIn: false, barNo: barNo });
+    }
+    nextBarTime += dur;
+    nextBarIndex++;
+  }
+}
+
+function startLoop() {
+  ensureAudio();                               // still inside the click gesture
+  state.playing = true;
+  events = []; lastCur = null; lastNext = -2;
+  nextBarTime  = audioNow() + 0.15;
+  nextBarIndex = 0;
+  scheduleAhead();
+  if (loopTimer) clearInterval(loopTimer);
+  loopTimer = setInterval(scheduleAhead, 40);
+  updateTransport();
+}
+function stopLoop() {
+  state.playing = false;
+  if (loopTimer) { clearInterval(loopTimer); loopTimer = null; }
+  events = []; lastCur = null; lastNext = -2;
+  updateTransport();
+}
+function togglePlay() { if (state.playing) stopLoop(); else startLoop(); }
+
+function tick() {
+  requestAnimationFrame(tick);
+  if (!state.playing) return;
+  var now = audioNow();
+  var cur = null, idx = -1;
+  for (var i = events.length - 1; i >= 0; i--) {
+    if (events[i].time <= now) { cur = events[i]; idx = i; break; }
+  }
+  if (cur !== lastCur) {
+    lastCur = cur;
+    if (cur && !cur.countIn && cur.degree !== state.degree) {
+      state.degree = cur.degree;
+      refresh();
+    }
+  }
+  // The next chord is derived from the current event's bar number, so it is
+  // known immediately — no need to wait for the next bar to be scheduled.
+  var prog = PROGRESSIONS[state.scale][state.progIdx];
+  var nd = -1;
+  if (cur && cur.countIn)                nd = prog.deg[0];
+  else if (cur)                           nd = prog.deg[(cur.barNo + 1) % prog.deg.length];
+  if (nd !== lastNext) { lastNext = nd; setNextMarker(nd); }
+
+  if (cur) {
+    var beat = Math.floor((now - cur.time) / (cur.dur / 4));
+    if (beat > 3) beat = 3; if (beat < 0) beat = 0;
+    if (beat !== tick.lastBeat || cur !== tick.lastForBeat) {
+      tick.lastBeat = beat; tick.lastForBeat = cur;
+      paintBeats(beat, cur.countIn);
+    }
+    var s = cur.countIn ? 'count-in' : '';
+    if (statusEl.textContent !== s) statusEl.textContent = s;
+  }
+}
+
+/* =========================================================================
+   9. COMPUTER KEYBOARD
+   1-7 -> the seven chords, Space -> play/pause, letters -> single keys.
+   ========================================================================= */
+var NOTE_KEYS = {
+  // lower octave C3..B3 (bottom row = white keys, home row = black keys)
+  z:48, s:49, x:50, d:51, c:52, v:53, g:54, b:55, h:56, n:57, j:58, m:59,
+  // upper octave C4..C5 (top row = white keys, home row = black keys)
+  q:60, a:61, w:62, f:63, e:64, r:65, k:66, t:67, l:68, y:69, o:70, u:71, i:72
+};
+
+function onDocKeyDown(e) {
+  if (e.repeat) return;
+  var k = e.key;
+  if (k === ' ' || k === 'Spacebar') { e.preventDefault(); togglePlay(); return; }
+  if (k >= '1' && k <= '7') {
+    state.degree = parseInt(k, 10) - 1;
+    refresh();
+    playChord(getChord(state.degree, state.variation).midis, audioNow());
+    return;
+  }
+  var midi = NOTE_KEYS[k.toLowerCase()];
+  if (midi !== undefined) {
+    e.preventDefault();
+    playNote(midi, audioNow(), 1);
+    for (var i = 0; i < keys.length; i++) {
+      if (keys[i].midi === midi) {
+        (function (node) {
+          node.classList.add('pressed');
+          setTimeout(function () { node.classList.remove('pressed'); }, 220);
+        })(keys[i].el);
+        break;
+      }
+    }
+  }
+}
+
+/* =========================================================================
+   10. BOOT  (never let an exception leave a blank page)
+   ========================================================================= */
+try {
+  buildDOM();
+  refresh();
+  updateTransport();
+  layout();
+  requestAnimationFrame(function () { layout(); });
+
+  window.addEventListener('resize', layout);
+  window.addEventListener('orientationchange', function () { setTimeout(layout, 120); });
+
+  // iOS: the AudioContext and the silent <audio> primer must both be created
+  // inside a real user gesture, or the page stays silent forever.
+  function unlock() { ensureAudio(); }
+  document.addEventListener('pointerdown', unlock, { capture: true, once: true });
+  document.addEventListener('keydown', unlock, { capture: true, once: true });
+  document.addEventListener('keydown', onDocKeyDown);
+
+  requestAnimationFrame(tick);
+} catch (err) {
+  // Last resort: say something on screen instead of showing a blank page.
+  try {
+    document.body.innerHTML =
+      '<pre style="padding:16px;color:#ffd166;font:12px ui-monospace,monospace">' +
+      'Chord Coach failed to start:\n' + String(err) + '</pre>';
+  } catch (e2) {}
+}
+
+})();
+</script>
+</body>
+</html>
